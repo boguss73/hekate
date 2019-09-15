@@ -240,64 +240,6 @@ void reloc_patcher(u32 payload_dst, u32 payload_src, u32 payload_size)
 	}
 }
 
-int execute_payload(char *path)
-{
-	if (sd_mount())
-	{
-		FIL fp;
-		if (f_open(&fp, path, FA_READ))
-		{
-			EPRINTFARGS("Payload file is missing!\n(%s)", path);
-			sd_unmount(false);
-
-			goto out;
-		}
-
-		// Read and copy the payload to our chosen address
-		void *buf;
-		u32 size = f_size(&fp);
-
-		if (size < 0x30000)
-			buf = (void *)RCM_PAYLOAD_ADDR;
-		else
-			buf = (void *)COREBOOT_ADDR;
-
-		if (f_read(&fp, buf, size, NULL))
-		{
-			f_close(&fp);
-			sd_unmount(false);
-
-			goto out;
-		}
-
-		f_close(&fp);
-
-		sd_unmount(true);
-
-		if (size < 0x30000)
-		{
-			reloc_patcher(PATCHED_RELOC_ENTRY, EXT_PAYLOAD_ADDR, ALIGN(size, 0x10));
-			reconfig_hw_workaround(false, byte_swap_32(*(u32 *)(buf + size - sizeof(u32))));
-		}
-		else
-		{
-			reloc_patcher(PATCHED_RELOC_ENTRY, EXT_PAYLOAD_ADDR, 0x7000);
-			reconfig_hw_workaround(true, 0);
-		}
-
-		void (*ext_payload_ptr)() = (void *)EXT_PAYLOAD_ADDR;
-
-		msleep(100);
-
-		// Launch our payload.
-		(*ext_payload_ptr)();
-	}
-
-out:
-	return LV_RES_OK;
-}
-
-
 lv_res_t launch_payload(lv_obj_t *list)
 {
 	const char *filename = lv_list_get_btn_text(list);

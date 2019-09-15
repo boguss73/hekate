@@ -442,7 +442,6 @@ static void _launch_hos(u8 autoboot, u8 autoboot_list)
 
 static void _reload_nyx()
 {
-	execute_payload("payload.bin");
 	b_cfg->boot_cfg = BOOT_CFG_AUTOBOOT_EN;
 	b_cfg->autoboot = 0;
 	b_cfg->autoboot_list = 0;
